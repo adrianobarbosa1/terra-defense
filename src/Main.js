@@ -1,6 +1,7 @@
 import { Enemy } from "./Enemy.js";
 import { ENEMY_TYPES } from "./EnemyData.js";
 import { LEVELS } from "./LevelData.js";
+import { Particle } from "./Particle.js";
 import { Player } from "./Player.js";
 import { Projectile } from "./Projectile.js";
 import { Turret } from "./Turret.js";
@@ -10,6 +11,8 @@ class Game {
   constructor() {
     this.canvas = document.getElementById("gameCanvas");
     this.ctx = this.canvas.getContext("2d");
+    this.resize();
+    window.addEventListener("resize", () => this.resize());
     this.canvas.width = 600;
     this.canvas.height = 800;
     this.isGameOver = false;
@@ -20,6 +23,7 @@ class Game {
     this.xpNextLevel = 100;
     this.level = 1;
     this.inventory = []; // Armas instaladas [{tipo: 'RAIO', level: 1}]
+    this.particles = [];
 
     this.init();
     this.resetGame();
@@ -33,6 +37,18 @@ class Game {
     });
   }
 
+  resize() {
+    // Ajusta a resolução interna do canvas para o tamanho real da janela
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+
+    // Recalcula a posição do player para não ficar flutuando ou enterrado
+    if (this.player) {
+      this.player.x = this.canvas.width / 2;
+      this.player.y = this.canvas.height - 60; // 60px acima do fundo
+    }
+  }
+
   resetGame() {
     this.enemies = [];
     this.projectiles = [];
@@ -42,6 +58,10 @@ class Game {
     this.baseHealth = 100;
     this.isGameOver = false;
     this.currentLevelIndex = 0;
+    // Garanta que o player nasça no lugar certo
+    this.player = new Player(this.canvas.width, this.canvas.height);
+    this.player.x = this.canvas.width / 2;
+    this.player.y = this.canvas.height - 50;
 
     // Criamos a fila de inimigos para a fase atual
     this.prepareLevel();
@@ -236,7 +256,13 @@ class Game {
     this.player.fireTimer++;
     if (this.player.fireTimer >= this.player.fireRate && target) {
       this.projectiles.push(
-        new Projectile(this.player.x, this.player.y - 20, target.x, target.y)
+        new Projectile(
+          this.player.x,
+          this.player.y - 20,
+          target.x,
+          target.y,
+          "#4df3ff"
+        )
       );
       this.player.fireTimer = 0;
     }
@@ -252,6 +278,13 @@ class Game {
       p.update();
       if (p.y < 0 || p.x < 0 || p.x > this.canvas.width) {
         this.projectiles.splice(pIndex, 1);
+      }
+    });
+
+    this.particles.forEach((p, index) => {
+      p.update();
+      if (p.alpha <= 0) {
+        this.particles.splice(index, 1);
       }
     });
 
@@ -282,7 +315,13 @@ class Game {
             this.enemies.splice(eIndex, 1);
             this.score += 10;
             this.addXP(25);
+
             document.getElementById("score").innerText = this.score;
+
+            // CRIAR PARTÍCULAS AQUI
+            for (let i = 0; i < 15; i++) {
+              this.particles.push(new Particle(enemy.x, enemy.y, enemy.color));
+            }
           }
         }
       });
@@ -368,18 +407,22 @@ class Game {
     // 4. Desenha Inimigos e Projéteis
     this.enemies.forEach((e) => e.draw(this.ctx));
     this.projectiles.forEach((p) => p.draw(this.ctx));
+
+    // 5. Desenha Partículas
+    this.particles.forEach((p) => p.draw(this.ctx));
   }
 
   drawBase() {
-    const groundHeight = 20;
+    const groundHeight = 25;
     const yPos = this.canvas.height - groundHeight;
+
+    // Chão marrom ocupando 100% da largura do canvas
     this.ctx.fillStyle = "#3e2723";
     this.ctx.fillRect(0, yPos, this.canvas.width, groundHeight);
 
-    const healthWidth =
-      (this.baseHealth / this.baseMaxHealth) * this.canvas.width;
-    this.ctx.fillStyle = this.baseHealth > 30 ? "#4caf50" : "#f44336";
-    this.ctx.fillRect(0, yPos, healthWidth, 5);
+    // Linha de grama ou topo da base
+    this.ctx.fillStyle = "#4caf50";
+    this.ctx.fillRect(0, yPos, this.canvas.width, 5);
   }
 
   gameLoop() {

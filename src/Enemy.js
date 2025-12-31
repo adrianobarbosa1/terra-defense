@@ -3,8 +3,8 @@ export class Enemy {
   constructor(canvasWidth, config) {
     this.nome = config.nome;
     this.radius = config.radius || 15;
-    this.x = Math.random() * (canvasWidth - this.radius * 2) + this.radius;
-    this.y = -this.radius;
+    this.x = Math.random() * (canvasWidth - 40) + 20;
+    this.y = -10;
 
     // Atributos vindo do JSON
     this.speed = config.velocidade;

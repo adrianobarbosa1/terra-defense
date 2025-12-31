@@ -1,19 +1,16 @@
-body {
+body,
+html {
   margin: 0;
-  background: #0a0a0c; /* Fundo escuro fora do canvas */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  overflow: hidden;
-  color: white;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  padding: 0;
+  overflow: hidden; /* Remove barras de rolagem */
+  background: black;
 }
 
 #ui {
   position: absolute;
   top: 20px;
   left: 20px;
+  z-index: 10;
   background: rgba(0, 0, 0, 0.7);
   padding: 15px;
   border-radius: 8px;
@@ -43,14 +40,13 @@ body {
 }
 
 canvas {
-  border: 3px solid #333;
-  /* Gradiente de fundo do espaço */
-  background: radial-gradient(circle at bottom, #1a1a2e 0%, #050505 100%);
-  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-  cursor: crosshair;
+  display: block; /* Remove o respiro na parte inferior */
 }
 
 #game-over-screen {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   position: absolute;
   background: rgba(0, 0, 0, 0.9);
   padding: 40px;
@@ -90,7 +86,7 @@ canvas {
   transition: width 0.3s;
 }
 #level-up-modal {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.85);
   display: flex;
