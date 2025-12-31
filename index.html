@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Terra Defense - Modular</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="ui">
+      <h1>Terra Defense</h1>
+      <p>
+        Vida Base: <span id="health">100</span> | Pontos:
+        <span id="score">0</span>
+      </p>
+    </div>
+
+    <div id="game-over-screen" style="display: none">
+      <h2>BASE DESTRUÍDA!</h2>
+      <p>Sua pontuação final: <span id="final-score">0</span></p>
+      <button id="retry-button">RECOMECAR DEFESA</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script type="module" src="src/Main.js"></script>
+  </body>
+</html>

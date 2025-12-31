@@ -1,0 +1,42 @@
+export const ENEMY_TYPES = {
+  BESOURO: {
+    nome: "Besouro de Casco Espinhoso",
+    cor: "#ff5722",
+    radius: 18,
+    velocidade: 0.6,
+    vidaTotal: 500,
+    danoNaBase: 15,
+  },
+  FERRAO: {
+    nome: "Ferrão Mutante",
+    cor: "#e91e63",
+    radius: 12,
+    velocidade: 0.255,
+    vidaTotal: 300,
+    danoNaBase: 10,
+  },
+  ESCAVADOR: {
+    nome: "Escavador",
+    cor: "#795548",
+    radius: 25,
+    velocidade: 0.4,
+    vidaTotal: 15000,
+    danoNaBase: 50,
+  },
+  DRONE: {
+    nome: "Drone Rebelde",
+    cor: "#607d8b",
+    radius: 14,
+    velocidade: 0.6,
+    vidaTotal: 15000,
+    danoNaBase: 5,
+  },
+  MINI_CHEFE: {
+    nome: "Nave classe quebra minas de elite",
+    cor: "#ffeb3b",
+    radius: 40,
+    velocidade: 0.1,
+    vidaTotal: 100000,
+    danoNaBase: 100,
+  },
+};
