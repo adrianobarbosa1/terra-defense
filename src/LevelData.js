@@ -1,26 +1,31 @@
+// src/LevelData.js
 export const LEVELS = [
   {
     id: 1,
-    nome: "Primeiro Contato",
-    inimigos: ["BESOURO", "BESOURO", "FERRAO", "BESOURO"], // Ordem de aparição
-    spawnRate: 120, // Velocidade de spawn nesta fase (mais alto = mais lento)
+    nome: "FASE-1A: Reconhecimento",
+    horda: {
+      BESOURO: 5,
+      FERRAO: 2,
+    },
+    spawnRate: 100,
   },
   {
     id: 2,
-    nome: "Invasão Insetoide",
-    inimigos: ["FERRAO", "FERRAO", "BESOURO", "FERRAO", "DRONE"],
-    spawnRate: 90,
+    nome: "FASE-1A: Inicio da invasão",
+    horda: {
+      FERRAO: 15,
+      BESOURO: 10,
+      DRONE: 2,
+    },
+    spawnRate: 80,
   },
   {
     id: 3,
-    nome: "A Chegada dos Rebeldes",
-    inimigos: ["DRONE", "DRONE", "ESCAVADOR", "BESOURO"],
-    spawnRate: 70,
-  },
-  {
-    id: 4,
-    nome: "O Despertar do Chefe",
-    inimigos: ["MINI_CHEFE"],
-    spawnRate: 200,
+    nome: "FASE-1A: Cerco Rebelde",
+    horda: {
+      DRONE: 20,
+      ESCAVADOR: 5,
+    },
+    spawnRate: 60,
   },
 ];
