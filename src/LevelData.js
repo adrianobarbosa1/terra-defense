@@ -2,7 +2,7 @@
 export const LEVELS = [
   {
     id: 1,
-    nome: "FASE-1A: Reconhecimento",
+    nome: "wave 1",
     horda: {
       BESOURO: 5,
       FERRAO: 2,
@@ -11,7 +11,7 @@ export const LEVELS = [
   },
   {
     id: 2,
-    nome: "FASE-1A: Inicio da invasão",
+    nome: "wave 2",
     horda: {
       FERRAO: 15,
       BESOURO: 10,
@@ -21,7 +21,7 @@ export const LEVELS = [
   },
   {
     id: 3,
-    nome: "FASE-1A: Cerco Rebelde",
+    nome: "wave 3",
     horda: {
       DRONE: 20,
       ESCAVADOR: 5,

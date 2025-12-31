@@ -3,6 +3,7 @@ import { ENEMY_TYPES } from "./EnemyData.js";
 import { LEVELS } from "./LevelData.js";
 import { Player } from "./Player.js";
 import { Projectile } from "./Projectile.js";
+import { Turret } from "./Turret.js";
 import { WEAPONS_DB } from "./WeaponData.js";
 
 class Game {
@@ -190,15 +191,24 @@ class Game {
   }
 
   selectWeapon(key) {
-    const existing = this.inventory.find((w) => w.id === key);
-    if (existing) {
-      existing.level++;
+    // Verifica se já possui essa arma
+    const existingTurret = this.inventory.find((t) => t.weaponKey === key);
+
+    if (existingTurret) {
+      existingTurret.level++; // Sobe o nível se já existe
     } else {
-      this.inventory.push({ id: key, level: 1, timer: 0 });
+      // Cria uma nova torreta no próximo slot disponível
+      const newTurret = new Turret(
+        this.player.x,
+        this.player.y,
+        key,
+        this.inventory.length
+      );
+      this.inventory.push(newTurret);
     }
 
     document.getElementById("level-up-modal").style.display = "none";
-    this.isGameOver = false; // Resume o jogo
+    this.isGameOver = false;
   }
 
   update() {
@@ -207,36 +217,37 @@ class Game {
     const currentLevel = LEVELS[this.currentLevelIndex];
     this.spawnTimer++;
 
-    // 1. SPAWN LOGIC
-    // Lógica de Spawn usando a FILA
+    // 1. SPAWN DE INIMIGOS
     if (this.enemyQueue.length > 0) {
       if (this.spawnTimer > currentLevel.spawnRate) {
-        const enemyKey = this.enemyQueue.shift(); // Remove o primeiro da fila
+        const enemyKey = this.enemyQueue.shift();
         const config = ENEMY_TYPES[enemyKey];
-
         this.enemies.push(new Enemy(this.canvas.width, config));
         this.spawnTimer = 0;
       }
-    } else {
-      // Se a fila acabou E não há mais inimigos na tela, próxima fase
-      if (this.enemies.length === 0 && !this.isLevelTransitioning) {
-        this.nextLevel();
-      }
+    } else if (this.enemies.length === 0 && !this.isLevelTransitioning) {
+      this.nextLevel();
     }
 
-    // 2. TIRO AUTOMÁTICO
+    // 2. BUSCA DE ALVO (Única para todas as armas)
+    const target = this.getClosestEnemy();
+
+    // 3. ARMA PRINCIPAL (Player)
     this.player.fireTimer++;
-    if (this.player.fireTimer >= this.player.fireRate) {
-      const target = this.getClosestEnemy();
-      if (target) {
-        this.projectiles.push(
-          new Projectile(this.player.x, this.player.y - 20, target.x, target.y)
-        );
-        this.player.fireTimer = 0;
-      }
+    if (this.player.fireTimer >= this.player.fireRate && target) {
+      this.projectiles.push(
+        new Projectile(this.player.x, this.player.y - 20, target.x, target.y)
+      );
+      this.player.fireTimer = 0;
     }
 
-    // 3. MOVIMENTAÇÃO DOS PROJÉTEIS
+    // 4. ARMAS SECUNDÁRIAS (Turrets)
+    this.inventory.forEach((turret) => {
+      // A classe Turret já cuida do seu próprio timer e disparo
+      turret.update(this.player.x, this.player.y, target, this.projectiles);
+    });
+
+    // 5. MOVIMENTAÇÃO DOS PROJÉTEIS
     this.projectiles.forEach((p, pIndex) => {
       p.update();
       if (p.y < 0 || p.x < 0 || p.x > this.canvas.width) {
@@ -244,25 +255,7 @@ class Game {
       }
     });
 
-    // Lógica das Armas Secundárias
-    this.inventory.forEach((weapon, index) => {
-      const data = WEAPONS_DB[weapon.id];
-      // Alterna esquerda e direita
-      const offsetX = (index + 1) * 35 * (index % 2 === 0 ? 1 : -1);
-
-      this.ctx.save();
-      this.ctx.fillStyle = data.cor;
-      // Desenha um pequeno canhão (quadrado ou triângulo) ao lado do player
-      this.ctx.translate(this.player.x + offsetX, this.player.y);
-      this.ctx.fillRect(-10, -10, 20, 20); // Base do canhão secundário
-
-      // Texto do Level da Arma
-      this.ctx.fillStyle = "white";
-      this.ctx.font = "10px Arial";
-      this.ctx.fillText("Lvl " + weapon.level, -10, 25);
-      this.ctx.restore();
-    });
-    // 4. MOVIMENTAÇÃO E COLISÃO DOS INIMIGOS (Tudo acontece aqui dentro)
+    // 6. COLISÕES E INIMIGOS
     this.enemies.forEach((enemy, eIndex) => {
       enemy.update();
 
@@ -270,28 +263,25 @@ class Game {
       if (enemy.y + enemy.radius >= this.canvas.height - 20) {
         this.enemies.splice(eIndex, 1);
         this.baseHealth -= enemy.danoNaBase;
-        document.getElementById("health").innerText = this.baseHealth;
+        this.updateUI(); // Atualiza a barra de vida e XP
         if (this.baseHealth <= 0) {
           this.baseHealth = 0;
           this.gameOver();
         }
-        return; // Pula para o próximo inimigo pois este foi removido
+        return;
       }
 
-      // Colisão Projétil -> Inimigo (Margem de segurança aumentada aqui)
+      // Colisão Projétil -> Inimigo
       this.projectiles.forEach((p, pIndex) => {
         const dist = Math.hypot(p.x - enemy.x, p.y - enemy.y);
-        const margemSeguranca = 5; // Ajuda no acerto de ângulos difíceis
-
-        if (dist < enemy.radius + p.radius + margemSeguranca) {
+        if (dist < enemy.radius + p.radius + 5) {
           this.projectiles.splice(pIndex, 1);
-          enemy.health -= 500; // Ajuste conforme a vida no seu JSON
+          enemy.health -= 500;
 
           if (enemy.health <= 0) {
             this.enemies.splice(eIndex, 1);
             this.score += 10;
-            this.addXP(25); // Dá 25 de XP por inimigo derrotado
-
+            this.addXP(25);
             document.getElementById("score").innerText = this.score;
           }
         }
@@ -361,9 +351,21 @@ class Game {
   }
 
   draw() {
+    // Limpa o canvas
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // 1. Desenha o cenário (Base e Chão)
     this.drawBase();
+
+    // 2. Desenha o Player (Canhão Principal)
     this.player.draw(this.ctx);
+
+    // 3. Desenha as Armas Secundárias (Torretas)
+    this.inventory.forEach((turret) => {
+      turret.draw(this.ctx, this.player.x, this.player.y);
+    });
+
+    // 4. Desenha Inimigos e Projéteis
     this.enemies.forEach((e) => e.draw(this.ctx));
     this.projectiles.forEach((p) => p.draw(this.ctx));
   }
