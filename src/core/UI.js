@@ -4,20 +4,44 @@ export class UI {
     this.xpBar = document.getElementById("xp-bar");
     this.healthDisplay = document.getElementById("health");
     this.scoreDisplay = document.getElementById("score");
-    this.lvlDisplay = document.getElementById("lvl-display");
+    this.waveDisplay = document.getElementById("wave-display"); // Renomeado de lvl-display
     this.finalScore = document.getElementById("final-score");
     this.weaponContainer = document.getElementById("weapon-options");
+    this.levelSelectionScreen = document.getElementById(
+      "level-selection-screen"
+    );
+    this.levelButtonsContainer = document.getElementById(
+      "level-buttons-container"
+    );
+    this.gameCanvas = document.getElementById("gameCanvas");
+    this.uiContainer = document.getElementById("ui");
   }
 
-  updateStats(health, score, level) {
+  updateStats(health, score, wave) {
     this.healthDisplay.innerText = health;
     this.scoreDisplay.innerText = score;
-    this.lvlDisplay.innerText = level;
+    this.waveDisplay.innerText = wave; // Atualiza o display da wave
   }
 
   updateXP(current, next) {
     const percent = (current / next) * 100;
     this.xpBar.style.width = `${percent}%`;
+  }
+
+  createLevelSelection(phases, onSelect) {
+    this.levelButtonsContainer.innerHTML = "";
+    Object.keys(phases).forEach((phaseKey) => {
+      const button = document.createElement("button");
+      button.className = "level-button";
+      button.innerText = phaseKey; // Usa a chave como nome do botão (ex: "Fase 1")
+      button.onclick = () => {
+        onSelect(phaseKey);
+        this.hideModal("level-selection-screen");
+        this.showModal("ui", "block");
+        this.showModal("gameCanvas", "block");
+      };
+      this.levelButtonsContainer.appendChild(button);
+    });
   }
 
   showLevelUp(options, onSelect, drawIconCallback) {
@@ -33,11 +57,10 @@ export class UI {
       iconCanvas.height = 100;
       iconCanvas.className = "weapon-icon-canvas";
 
-      // Chamamos o callback de desenho que está no Game
       drawIconCallback(iconCanvas, key);
 
       card.appendChild(iconCanvas);
-      card.innerHTML += `<strong>${key}</strong>`; // Aqui você pode buscar no DB o nome real
+      card.innerHTML += `<strong>${key}</strong>`;
 
       card.onclick = () => {
         onSelect(key);
@@ -52,11 +75,17 @@ export class UI {
     this.showModal("game-over-screen", "block");
   }
 
-  showModal(id, display) {
-    document.getElementById(id).style.display = display;
+  showModal(id, display = "block") {
+    const element = document.getElementById(id);
+    if (element) {
+      element.style.display = display;
+    }
   }
 
   hideModal(id) {
-    document.getElementById(id).style.display = "none";
+    const element = document.getElementById(id);
+    if (element) {
+      element.style.display = "none";
+    }
   }
 }

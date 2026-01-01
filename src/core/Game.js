@@ -1,5 +1,5 @@
 import { ENEMY_TYPES } from "../data/EnemyData.js";
-import { LEVELS } from "../data/LevelData.js";
+import { PHASES } from "../data/LevelData.js";
 import { WEAPONS_DB } from "../data/WeaponData.js";
 import { Particle } from "../effects/Particle.js";
 import { Enemy } from "../entities/Enemy.js";
@@ -13,35 +13,15 @@ class Game {
     this.canvas = document.getElementById("gameCanvas");
     this.ctx = this.canvas.getContext("2d");
     this.ui = new UI();
-    this.resize();
-    window.addEventListener("resize", () => this.resize());
-
-    this.mouse = { x: 0, y: 0 };
-    this.isPlacingTurret = false;
-    this.turretToPlace = null;
-
-    this.isGameOver = false;
-    this.currentLevelIndex = 0;
-    this.isLevelTransitioning = false;
-    this.xp = 0;
-    this.xpNextLevel = 100;
-    this.level = 1;
-    this.inventory = [];
-    this.particles = [];
-    this.enemies = [];
-    this.projectiles = [];
 
     this.init();
-    this.resetGame();
-    this.gameLoop();
+    this.showLevelSelection();
   }
 
   init() {
-    document.getElementById("retry-button").addEventListener("click", () => {
-      this.resetGame();
-    });
+    window.addEventListener("resize", () => this.resize());
 
-    // Eventos de mouse para posicionar torretas
+    this.mouse = { x: 0, y: 0 };
     this.canvas.addEventListener("mousemove", (e) => {
       this.mouse.x = e.clientX;
       this.mouse.y = e.clientY;
@@ -52,6 +32,27 @@ class Game {
         this.placeTurret();
       }
     });
+
+    document.getElementById("retry-button").addEventListener("click", () => {
+      this.showLevelSelection();
+      this.ui.hideModal("game-over-screen");
+    });
+  }
+
+  showLevelSelection() {
+    this.ui.createLevelSelection(PHASES, (phaseKey) => {
+      this.startGame(phaseKey);
+    });
+    this.ui.showModal("level-selection-screen", "flex");
+    this.ui.hideModal("ui");
+    this.ui.hideModal("gameCanvas");
+  }
+
+  startGame(phaseKey) {
+    this.currentPhaseKey = phaseKey;
+    this.currentWaveIndex = 0;
+    this.resetGame();
+    this.gameLoop();
   }
 
   resize() {
@@ -64,6 +65,8 @@ class Game {
   }
 
   resetGame() {
+    this.resize();
+
     this.enemies = [];
     this.projectiles = [];
     this.particles = [];
@@ -75,36 +78,44 @@ class Game {
     this.isGameOver = false;
     this.isPlacingTurret = false;
     this.turretToPlace = null;
-    this.currentLevelIndex = 0;
-
+    this.xp = 0;
+    this.xpNextLevel = 100;
+    
     this.player = new Player(this.canvas.width, this.canvas.height);
-    this.player.x = this.canvas.width / 2;
-    this.player.y = this.canvas.height - 60;
 
-    this.prepareLevel();
+    this.prepareWave();
 
-    this.ui.updateStats(this.baseHealth, this.score, this.level);
+    this.ui.updateStats(this.baseHealth, this.score, this.currentWaveIndex + 1);
     this.ui.updateXP(this.xp, this.xpNextLevel);
     this.ui.hideModal("game-over-screen");
   }
 
-  prepareLevel() {
-    const level = LEVELS[this.currentLevelIndex];
+  prepareWave() {
+    const currentPhase = PHASES[this.currentPhaseKey];
+    const wave = currentPhase[this.currentWaveIndex];
     this.enemyQueue = [];
-    for (const [tipo, quantidade] of Object.entries(level.horda)) {
+    for (const [tipo, quantidade] of Object.entries(wave.horda)) {
       for (let i = 0; i < quantidade; i++) {
         this.enemyQueue.push(tipo);
       }
     }
     this.enemyQueue.sort(() => Math.random() - 0.5);
+    this.spawnTimer = 0; // Reseta o timer a cada nova wave
+    this.isLevelTransitioning = false; // Garante que a transição acabou
+    this.ui.updateStats(this.baseHealth, this.score, this.currentWaveIndex + 1);
   }
 
   gameOver() {
     this.isGameOver = true;
     this.ui.showGameOver(this.score);
   }
+  
+  gameWin() {
+    this.isGameOver = true;
+    alert("Você venceu a fase!");
+    this.showLevelSelection();
+  }
 
-  // Agora aceita uma posição para encontrar o inimigo mais próximo
   getClosestEnemy(fromX, fromY) {
     let closest = null;
     let minDistance = Infinity;
@@ -129,7 +140,6 @@ class Game {
   levelUp() {
     this.isGameOver = true;
     this.xp -= this.xpNextLevel;
-    this.level++;
     this.xpNextLevel = Math.floor(this.xpNextLevel * 1.5);
 
     const keys = Object.keys(WEAPONS_DB);
@@ -167,9 +177,8 @@ class Game {
     const existingTurret = this.inventory.find((t) => t.weaponKey === key);
     if (existingTurret) {
       existingTurret.level++;
-      this.isGameOver = false; // Continua o jogo
+      this.isGameOver = false;
     } else {
-      // Entra no modo de posicionamento
       this.isPlacingTurret = true;
       this.turretToPlace = key;
       this.ui.hideModal("level-up-modal");
@@ -177,28 +186,27 @@ class Game {
   }
 
   placeTurret() {
-    // Não permite colocar na área do chão
     if (this.mouse.y < this.canvas.height - 40) {
       this.inventory.push(
         new Turret(this.mouse.x, this.mouse.y, this.turretToPlace)
       );
       this.isPlacingTurret = false;
       this.turretToPlace = null;
-      this.isGameOver = false; // O jogo continua após colocar a torreta
+      this.isGameOver = false;
     }
   }
 
   update() {
     if (this.isGameOver && !this.isPlacingTurret) return;
+    if (this.isPlacingTurret) return;
 
-    if (this.isPlacingTurret) return; // Pausa a lógica do jogo enquanto posiciona
-
-    const currentLevel = LEVELS[this.currentLevelIndex];
+    const currentPhase = PHASES[this.currentPhaseKey];
+    const currentWave = currentPhase[this.currentWaveIndex];
     this.spawnTimer++;
 
     if (
       this.enemyQueue.length > 0 &&
-      this.spawnTimer > currentLevel.spawnRate
+      this.spawnTimer > currentWave.spawnRate
     ) {
       const enemyKey = this.enemyQueue.shift();
       this.enemies.push(new Enemy(this.canvas.width, ENEMY_TYPES[enemyKey]));
@@ -208,7 +216,7 @@ class Game {
       this.enemies.length === 0 &&
       !this.isLevelTransitioning
     ) {
-      this.nextLevel();
+      this.nextWave();
     }
 
     const playerTarget = this.getClosestEnemy(this.player.x, this.player.y);
@@ -227,7 +235,6 @@ class Game {
       this.player.fireTimer = 0;
     }
 
-    // Passa a função getClosestEnemy para cada torreta
     this.inventory.forEach((t) =>
       t.update((x, y) => this.getClosestEnemy(x, y), this.projectiles)
     );
@@ -248,7 +255,7 @@ class Game {
       if (enemy.y + enemy.radius >= this.canvas.height - 25) {
         this.enemies.splice(eIndex, 1);
         this.baseHealth -= enemy.danoNaBase;
-        this.ui.updateStats(this.baseHealth, this.score, this.level);
+        this.ui.updateStats(this.baseHealth, this.score, this.currentWaveIndex + 1);
         if (this.baseHealth <= 0) this.gameOver();
         return;
       }
@@ -264,24 +271,24 @@ class Game {
             this.enemies.splice(eIndex, 1);
             this.score += 10;
             this.addXP(25);
-            this.ui.updateStats(this.baseHealth, this.score, this.level);
+            this.ui.updateStats(this.baseHealth, this.score, this.currentWaveIndex + 1);
           }
         }
       });
     });
   }
 
-  nextLevel() {
-    if (this.currentLevelIndex < LEVELS.length - 1) {
+  nextWave() {
+    const currentPhase = PHASES[this.currentPhaseKey];
+    if (this.currentWaveIndex < currentPhase.length - 1) {
       this.isLevelTransitioning = true;
+      alert(`Wave ${this.currentWaveIndex + 1} concluída! Preparando próxima wave...`);
       setTimeout(() => {
-        this.currentLevelIndex++;
-        this.prepareLevel();
-        this.spawnTimer = 0;
-        this.isLevelTransitioning = false;
+        this.currentWaveIndex++;
+        this.prepareWave();
       }, 2000);
     } else {
-      this.gameOver();
+      this.gameWin();
     }
   }
 
@@ -290,7 +297,7 @@ class Game {
     this.drawBase();
     this.particles.forEach((p) => p.draw(this.ctx));
     this.player.draw(this.ctx);
-    this.inventory.forEach((t) => t.draw(this.ctx)); // Desenha sem playerX/Y
+    this.inventory.forEach((t) => t.draw(this.ctx));
     this.enemies.forEach((e) => e.draw(this.ctx));
     this.projectiles.forEach((p) => p.draw(this.ctx));
 
@@ -302,18 +309,15 @@ class Game {
   drawTurretPreview() {
     const key = this.turretToPlace;
     if (!key) return;
-
     const x = this.mouse.x;
     const y = this.mouse.y;
     const data = WEAPONS_DB[key];
-
     this.ctx.save();
-    this.ctx.globalAlpha = 0.5; // Deixa o preview transparente
+    this.ctx.globalAlpha = 0.5;
     this.ctx.translate(x, y);
     this.ctx.fillStyle = data.cor;
     this.ctx.strokeStyle = "white";
     this.ctx.lineWidth = 2;
-
     if (key === "RAIO") {
       this.ctx.beginPath();
       this.ctx.moveTo(0, -15);
@@ -338,12 +342,9 @@ class Game {
       this.ctx.fillRect(-10, -10, 20, 20);
       this.ctx.strokeRect(-10, -10, 20, 20);
     }
-
     this.ctx.restore();
-
-    // Desenha o raio de alcance (opcional)
     this.ctx.beginPath();
-    this.ctx.arc(x, y, 150, 0, Math.PI * 2); // Raio de 150, ajuste se necessário
+    this.ctx.arc(x, y, 150, 0, Math.PI * 2);
     this.ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
     this.ctx.stroke();
   }
@@ -358,6 +359,7 @@ class Game {
   }
 
   gameLoop() {
+    if (this.isGameOver) return;
     this.update();
     this.draw();
     requestAnimationFrame(() => this.gameLoop());

@@ -6,25 +6,33 @@
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <div id="ui">
+    <!-- Tela de Seleção de Nível -->
+    <div id="level-selection-screen">
+      <h1>Selecione a Fase</h1>
+      <div id="level-buttons-container"></div>
+    </div>
+
+    <!-- UI Principal do Jogo (inicialmente oculta) -->
+    <div id="ui" style="display: none">
       <h1>Terra Defense</h1>
       <div class="xp-container">
         <div id="xp-bar"></div>
       </div>
-      <p>Lvl: <span id="lvl-display">1</span></p>
-
+      <p>Wave: <span id="wave-display">1</span></p>
       <p>
         Vida Base: <span id="health">100</span> | Pontos:
         <span id="score">0</span>
       </p>
     </div>
 
+    <!-- Tela de Game Over (inicialmente oculta) -->
     <div id="game-over-screen" style="display: none">
       <h2>BASE DESTRUÍDA!</h2>
       <p>Sua pontuação final: <span id="final-score">0</span></p>
       <button id="retry-button">RECOMECAR DEFESA</button>
     </div>
 
+    <!-- Modal de Level Up (inicialmente oculto) -->
     <div id="level-up-modal" style="display: none">
       <div class="modal-content">
         <h2>EVOLUÇÃO DISPONÍVEL!</h2>
@@ -32,7 +40,8 @@
       </div>
     </div>
 
-    <canvas id="gameCanvas"></canvas>
+    <!-- Canvas do Jogo (inicialmente oculto) -->
+    <canvas id="gameCanvas" style="display: none"></canvas>
 
     <script type="module" src="src/core/Game.js"></script>
   </body>
