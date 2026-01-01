@@ -1,6 +1,6 @@
 // src/Turret.js
+import { WEAPONS_DB } from "../data/WeaponData.js";
 import { Projectile } from "./Projectile.js";
-import { WEAPONS_DB } from "./WeaponData.js";
 
 export class Turret {
   constructor(playerX, playerY, weaponKey, slotIndex) {
